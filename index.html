@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Arabic Booklet</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/turn.js"></script>
+  <style>
+    body {
+      background-color: #f9f9f9;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    #book {
+      width: 800px;
+      height: 500px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      margin-top: 20px;
+    }
+
+    .page {
+      width: 400px;
+      height: 500px;
+      background-color: white;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .page img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #loading {
+      font-size: 16px;
+      color: #666;
+      margin-top: 20px;
+    }
+
+    .nav-buttons {
+      margin-top: 10px;
+    }
+
+    .nav-buttons button {
+      padding: 8px 16px;
+      margin: 0 5px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .nav-buttons button:hover {
+      background-color: #005ea2;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">📖 Loading booklet...</div>
+
+  <div class="nav-buttons" style="display:none;">
+    <button onclick="$('#book').turn('previous')">⬅️ Prev</button>
+    <button onclick="$('#book').turn('next')">Next ➡️</button>
+    <button onclick="toggleFullscreen()">🔳 Fullscreen</button>
+  </div>
+
+  <div id="book" style="display:none;"></div>
+
+  <script>
+    function toggleFullscreen() {
+      const elem = document.documentElement;
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    fetch("images.json")
+      .then(response => {
+        if (!response.ok) throw new Error("Network response was not ok");
+        return response.json();
+      })
+      .then(imageList => {
+        const book = document.getElementById("book");
+        imageList.forEach(name => {
+          const page = document.createElement("div");
+          page.className = "page";
+
+          const img = document.createElement("img");
+          img.src = `images/${name}`;
+          img.onerror = () => {
+            img.src = "images/placeholder.png"; // Optional fallback
+          };
+
+          page.appendChild(img);
+          book.appendChild(page);
+        });
+
+        $("#book").turn({
+          width: 800,
+          height: 500,
+          autoCenter: true,
+          direction: "rtl",
+          when: {
+            turning: function(event, page, view) {
+              let audio = new Audio("sounds/page-flip.mp3");
+              audio.play();
+            }
+          }
+        });
+
+        document.getElementById("loading").style.display = "none";
+        document.querySelector(".nav-buttons").style.display = "block";
+        book.style.display = "block";
+      })
+      .catch(error => {
+        document.getElementById("loading").textContent = "⚠️ Failed to load images.json";
+        console.error("Error loading images.json:", error);
+      });
+  </script>
+</body>
+</html>

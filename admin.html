@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel – Manage Book Pages</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f7fa;
+      padding: 40px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .upload-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      margin-bottom: 30px;
+    }
+
+    input[type="file"] {
+      margin-bottom: 15px;
+    }
+
+    .image-list-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      margin-bottom: 30px;
+    }
+
+    .image-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .image-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      cursor: grab;
+    }
+
+    .image-card img {
+      width: 80px;
+      height: auto;
+      border-radius: 4px;
+      margin-right: 15px;
+    }
+
+    .image-name {
+      flex-grow: 1;
+    }
+
+    .image-card button {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .image-card button:hover {
+      background-color: #c0392b;
+    }
+
+    .json-output {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    textarea {
+      width: 100%;
+      margin-top: 10px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📁 Admin Panel – Manage Book Pages</h2>
+
+  <div class="upload-section">
+    <input type="file" id="upload" multiple accept="image/*">
+    <button onclick="uploadImages()">Upload</button>
+  </div>
+
+  <div class="image-list-section">
+    <h3>📄 Uploaded Images (Drag to Reorder)</h3>
+    <div class="image-list" id="imageList"></div>
+  </div>
+
+  <div class="json-output">
+    <button onclick="generateJson()">💾 Save Order</button>
+    <p>Copy this and paste into <code>images.json</code>:</p>
+    <textarea id="jsonOutput" rows="10"></textarea>
+  </div>
+
+  <script>
+    let images = [];
+    let sortableInstance = null;
+
+    function uploadImages() {
+      const files = document.getElementById('upload').files;
+      for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          images.push({ name: file.name, src: e.target.result });
+          renderList();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function renderList() {
+      const list = document.getElementById('imageList');
+      list.innerHTML = '';
+
+      images.forEach((img, index) => {
+        const card = document.createElement('div');
+        card.className = 'image-card';
+
+        const image = document.createElement('img');
+        image.src = img.src;
+
+        const name = document.createElement('div');
+        name.className = 'image-name';
+        name.textContent = img.name;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = function () {
+          images.splice(index, 1);
+          renderList();
+        };
+
+        card.appendChild(image);
+        card.appendChild(name);
+        card.appendChild(removeBtn);
+        list.appendChild(card);
+      });
+
+      // Reinitialize Sortable only once
+      if (sortableInstance) sortableInstance.destroy();
+      sortableInstance = Sortable.create(list, {
+        animation: 150,
+        onEnd: function () {
+          const newOrder = [];
+          const cards = list.querySelectorAll('.image-card .image-name');
+          cards.forEach(card => {
+            const name = card.textContent;
+            const imgObj = images.find(i => i.name === name);
+            if (imgObj) newOrder.push(imgObj);
+          });
+          images = newOrder;
+        }
+      });
+    }
+
+    function generateJson() {
+      if (images.length === 0) {
+        alert("No images to save.");
+        return;
+      }
+
+      const filenames = images.map(img => img.name);
+      const json = JSON.stringify(filenames, null, 2);
+      document.getElementById("jsonOutput").value = json;
+    }
+  </script>
+</body>
+</html>
